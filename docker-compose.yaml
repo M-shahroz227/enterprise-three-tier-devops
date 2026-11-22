@@ -1,0 +1,23 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: enterprise_database
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - enterprise_network
+
+volumes:
+  mysql_data:
+
+networks:
+  enterprise_network:
+    driver: bridge
