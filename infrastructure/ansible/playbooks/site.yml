@@ -1,0 +1,29 @@
+---
+- name: Configure Enterprise Application Servers
+  hosts: app_servers
+  become: true
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - unzip
+          - git
+          - ca-certificates
+        state: present
+
+    - name: Check Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+      failed_when: false
+
+    - name: Display Docker status
+      debug:
+        msg: "{{ docker_version.stdout | default('Docker not installed') }}"

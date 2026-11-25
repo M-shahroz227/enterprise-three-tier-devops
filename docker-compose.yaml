@@ -1,22 +1,125 @@
+
 services:
+
   database:
     image: mysql:8.0
     container_name: enterprise_database
     restart: unless-stopped
+
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
     ports:
       - "3306:3306"
+
     volumes:
       - mysql_data:/var/lib/mysql
+
+    networks:
+      - enterprise_network
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'mysqladmin ping -h localhost -u root -p"$${MYSQL_ROOT_PASSWORD}"'
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./application/backend
+      dockerfile: Dockerfile
+
+    image: enterprise-backend:1.0.0
+    container_name: enterprise_backend
+    restart: unless-stopped
+
+    environment:
+      DB_HOST: database
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    expose:
+      - "8080"
+
+    networks:
+      - enterprise_network
+
+  frontend:
+    build:
+      context: ./application/frontend
+      dockerfile: Dockerfile
+
+    image: enterprise-frontend:1.0.0
+    container_name: enterprise_frontend
+    restart: unless-stopped
+
+    ports:
+      - "8081:80"
+
+    depends_on:
+      - backend
+
+    networks:
+      - enterprise_network
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: enterprise_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    networks:
+      - enterprise_network
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: enterprise_alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./infrastructure/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+    networks:
+      - enterprise_network
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: enterprise_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
     networks:
       - enterprise_network
 
 volumes:
   mysql_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   enterprise_network:
