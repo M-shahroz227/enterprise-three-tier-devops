@@ -1,5 +1,6 @@
 package com.enterprise.app.controller;
 
+import com.enterprise.app.dto.EmployeeRequest;
 import com.enterprise.app.entity.Employee;
 import com.enterprise.app.service.EmployeeService;
 import org.springframework.http.HttpStatus;
@@ -29,14 +30,16 @@ public class EmployeeController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Employee create(@RequestBody Employee employee) {
+    public Employee create(@RequestBody EmployeeRequest request) {
+        Employee employee = convertToEmployee(request);
         return service.create(employee);
     }
 
     @PutMapping("/{id}")
     public Employee update(
             @PathVariable Long id,
-            @RequestBody Employee employee) {
+            @RequestBody EmployeeRequest request) {
+        Employee employee = convertToEmployee(request);
         return service.update(id, employee);
     }
 
@@ -44,5 +47,13 @@ public class EmployeeController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(id);
+    }
+
+    private Employee convertToEmployee(EmployeeRequest request) {
+        Employee employee = new Employee();
+        employee.setName(request.name());
+        employee.setEmail(request.email());
+        employee.setDepartment(request.department());
+        return employee;
     }
 }
