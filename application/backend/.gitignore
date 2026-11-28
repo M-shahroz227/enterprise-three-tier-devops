@@ -1,0 +1,10 @@
+# SonarQube local analysis data
+.sonar/
+
+# Maven build output
+target/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
