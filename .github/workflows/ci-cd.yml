@@ -8,7 +8,7 @@ on:
 
   pull_request:
     branches:
-      - develop
+      - main
 
 jobs:
   build:
@@ -54,3 +54,19 @@ jobs:
         with:
           name: jacoco-coverage-report
           path: ./application/backend/target/site/jacoco/
+
+  semgrep:
+    name: semgrep SAST Security scan
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: run semgrep security scan
+        run: semgrep scan --config auto .
